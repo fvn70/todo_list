@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, Date
@@ -21,34 +21,59 @@ class Task(Base):
 
 def add_task():
     t = input('Enter a task\n')
-    task = Task(task=t)
+    d = input('Enter a deadline\n')
+    date = datetime.strptime(d, "%Y-%m-%d")
+    task = Task(task=t, deadline=date)
     session.add(task)
     session.commit()
-    # print(task)
+    print(task)
     print('The task has been added!')
 
-def read_task():
-    d = datetime.today().date()
-    q = session.query(Task).filter(Task.deadline==d).all()
-    print('\nToday:')
+def print_query(q, with_date):
     if q:
         for i in range(len(q)):
-            print(f'{i+1}. {q[i].task}')
+            s = f'{i+1}. {q[i].task}'
+            if with_date:
+                s += f'. {q[i].deadline.strftime("%#d %b")}'
+            print(s)
     else:
         print('Nothing to do!')
+
+def read_task(p):
+    d = datetime.today().date()
+    if p == 1:
+        print(f'\nToday {d.strftime("%#d %b")}:')
+        q = session.query(Task).filter(Task.deadline==d).all()
+        print_query(q, False)
+    elif p == 7:
+        for i in range(7):
+            date = d + timedelta(days=i)
+            print(f'\n{date.strftime("%A %#d %b")}:')
+            q = session.query(Task).filter(Task.deadline == date).order_by(Task.deadline).all()
+            print_query(q, False)
+    else:
+        print('\nAll tasks:')
+        q = session.query(Task).order_by(Task.deadline).all()
+        print_query(q, True)
     print()
 
 Base.metadata.create_all(engine)
 menu = '''1) Today's tasks
-2) Add a task
+2) Week's tasks
+3) All tasks
+4) Add a task
 0) Exit
 '''
 
 while True:
     cmd = int(input(menu))
     if cmd == 1:
-        read_task()
+        read_task(1)
     elif cmd == 2:
+        read_task(7)
+    elif cmd == 3:
+        read_task(0)
+    elif cmd == 4:
         add_task()
     else:
         break
