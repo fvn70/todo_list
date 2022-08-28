@@ -19,6 +19,21 @@ class Task(Base):
     def __repr__(self):
         return f'Task {self.task} {self.deadline.strftime("%Y-%m-%d")}'
 
+def del_task():
+    q = session.query(Task).order_by(Task.deadline).all()
+    if q:
+        print('Choose the number of the task you want to delete:')
+        print_query(q, True)
+        i = int(input())
+        if 0 < i <= len(q):
+            session.delete(q[i - 1])
+            session.commit()
+            print('The task has been deleted!')
+        else:
+            print('Nothing to delete')
+    else:
+        print('Nothing to delete')
+
 def add_task():
     t = input('Enter a task\n')
     d = input('Enter a deadline\n')
@@ -45,6 +60,13 @@ def read_task(p):
         print(f'\nToday {d.strftime("%#d %b")}:')
         q = session.query(Task).filter(Task.deadline==d).all()
         print_query(q, False)
+    elif p == -1:
+        print(f'\nMissed tasks:')
+        q = session.query(Task).filter(Task.deadline < d).all()
+        if q:
+            print_query(q, True)
+        else:
+            print('All tasks have been completed!')
     elif p == 7:
         for i in range(7):
             date = d + timedelta(days=i)
@@ -61,7 +83,9 @@ Base.metadata.create_all(engine)
 menu = '''1) Today's tasks
 2) Week's tasks
 3) All tasks
-4) Add a task
+4) Missed tasks
+5) Add a task
+6) Delete a task
 0) Exit
 '''
 
@@ -74,7 +98,11 @@ while True:
     elif cmd == 3:
         read_task(0)
     elif cmd == 4:
+        read_task(-1)
+    elif cmd == 5:
         add_task()
+    elif cmd == 6:
+        del_task()
     else:
         break
 print('Bye!')
